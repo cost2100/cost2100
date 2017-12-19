@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ChannelSpecification>
+	<BSInfo>
+		<position>0 0 0; 10 10 0;</position>
+		<commonRatio>0.7 0.3</commonRatio>
+		<antennaNum>2 2</antennaNum>
+	</BSInfo>
+	<MSInfo>
+		<position>0 10 0; 10 5 0;</position>
+		<velocity>1 0 0; 1 1 0;</velocity>
+		<commonCluster>4</commonCluster>
+		<antennaNum>1 1</antennaNum>
+	</MSInfo>
+	<Channel>	
+		<profile>aaltoOLOS</profile>
+		<frequency>5.24e9 5.36e9 3e5</frequency><!--Assume 400 frequency bins-->
+		<snapRate>1</snapRate>
+		<snapNum>10</snapNum>
+		<overSampleRate>4</overSampleRate>
+		<bandType>wide</bandType>
+		<external>
+			<bsHeight>0</bsHeight>
+			<msHeight>0</msHeight>
+			<cellRadius>30</cellRadius>
+			<rooftopHeight>0</rooftopHeight>
+			<roadWidth>0</roadWidth>
+			<buildingSeparation>0</buildingSeparation>
+			<roadOrientation>0</roadOrientation>
+			<roomSize>0 0</roomSize>
+			<floorNum>0</floorNum>
+		</external>
+		<stochastic>
+			<vrRadius>2.72</vrRadius>
+			<trRadius>1</trRadius>
+			<clusterPower>16</clusterPower>
+			<excessDelay>0.1</excessDelay>
+			<cutoffDistLOS>30</cutoffDistLOS>
+			<vrRadiusLOS>0</vrRadiusLOS>
+			<trRadiusLOS>0</trRadiusLOS>
+			<factorLOS>0.1 7.2</factorLOS>
+			<singleClusterRatio>0</singleClusterRatio>
+			<averageLocalCluster>0</averageLocalCluster>
+			<averageFarCluster>3.8</averageFarCluster>
+			<activeLocalCluster>1 1</activeLocalCluster>
+			<mpc>3 0</mpc>
+			<diffuseRadiation>0.05 3.4 0.5e-6</diffuseRadiation>
+			<shadowing>0 100</shadowing>
+			<spread><!--TODO: distribution type?-->
+				<delay>2.9417e-9 0.8601 0</delay>
+				<AoD>2.4962 2.6336 0</AoD>
+				<EoD>1.0607 3.6157 0</EoD>
+				<AoA>3.5777 2.0515 0</AoA>
+				<EoA>0.7071 3.6157 0</EoA>
+			</spread>
+			<crossCorrelation>1 0 0 0 0 0; 0 1 0 0 0 0; 0 0 1 0 0 0; 0 0 0 1 0 0; 0 0 0 0 1 0; 0 0 0 0 0 1</crossCorrelation>
+			<cluster>
+				<azimuth>43 39 0</azimuth>
+				<elevation>0 0 0</elevation>
+				<distance>0 30 1</distance>
+				<linkDelay>1e-9 3.4</linkDelay>
+			</cluster>
+			<!--mean and std of XPDV, XPDH and CPR-->
+			<polarization>0 0 0 0 0 0</polarization>
+			<!--dmc spatial spread mean, std and dmc delay power decaying-->
+			<dmc>0 0 0</dmc>
+		</stochastic>
+	</Channel>
+</ChannelSpecification>

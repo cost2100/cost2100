@@ -1,0 +1,22 @@
+2011.11.24 Meifang Zhu
+calc_pathloss.m:
+'300MHz_FOI' for outdoor scenario is added
+
+2012.02.02 Meifang Zhu
+get_cluster.m: 
+changed the link delay between multiple interacting clusters into exponential distribution
+
+2012.02.02 Meifang Zhu
+Some functions related to multiple link simulation are changed back into version COST2100.2.2.1: get_channel.m, get_VR.m, get_VRtable.m.
+
+2013.1.17 Meifang Zhu
+get_para.m:
+'300MHz_FOI' for outdoor scenario is included, and multiple link simulation for outdoor LOS scenario is implemented
+
+2013.1.17 Meifang Zhu
+cost2100.m:
+a new variable, Nlink, for single and multiple link simulation is added.
+
+2013.2.15 Meifang Zhu
+get_dipole_G: generates a theoratical dipole array response, the number of antennas can be set by users and the distance between two dipole is half a wavelentgh. Renamed the scenarios to reflect the measured environments.
+
