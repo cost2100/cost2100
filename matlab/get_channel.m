@@ -1,149 +1,321 @@
-function channel = get_channel( BS, MS, VRtable, VR, cluster, mpc, dmc, paraEx, paraSt)
-%GET_CHANNEL get the channel in link BS-MS
-%Default call: channel = get_channel( BS, MS, VRtable, VR, cluster, mpc,
-%dmc, paraEx, paraSt)
+function channel = get_channel(BS, BS_pos, MS, VRtable, MS_VR, BS_VR,...
+    BS_VR_len, BS_VR_slope, cluster, mpc, dmc, paraEx, paraSt)
+%GET_CHANNEL Get the channel of a single BS-MS link
+%
+%Default call:
+%function channel = get_channel(BS ,BS_pos, MS, VRtable, MS_VR, BS_VR,...
+%    BS_VR_len, BS_VR_slope, cluster, mpc, dmc, paraEx, paraSt)
+%
 %-------
 %Input:
 %-------
 %BS: BS information
+%BS_pos: BS position within a VLA setting, to be processed
 %MS: MS information
-%paraEx, paraSt: external and stochastic parameters
+%VRtable: VR allocation table
+%MS_VR: MS-VRs locations
+%BS_VR: BS-VRs locations
+%BS_VR_len: Length of the BS-VRs.
+%BS_VR_slope: Power slopes of the BS-VRs
+%cluster: Cluster information
+%mpc: All MPCs of the far clusters
+%dmc: Dense multipath components
+%paraEx: External parameters
+%paraSt: Stochastic parameters
 %------
 %Output:
 %------
-%channel: channel recording, struct.
-% .h(numAllMPC,[AoD EoD AoA EoA delay amp.]): unfiltered channel response
-% .pathloss: channel pathloss
-% .active_c: index of active far clusters
-% .a_VR: VR attenuation 
-% .h_los: LOS channel reponse
+%channel: Channel recording
+% .a_c: Cluster power attenuation
+% .h(numAllMPC,[AoD EoD AoA EoA delay amp. vv vh hh hv]): MPCs
+% .pathloss: Channel pathloss
+% .active_c: Indices of active far clusters
+% .a_VR: VR attenuation
+% .h_los: LOS channel response
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%This file is a part of the COST2100 channel model.
 %
-%See also: cost2100, get_para, get_VR, get_cluster, get_mpc, calc_pathloss,
-%get_channel_los
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Copyright (C)2008 LIU Ling-Feng, ICTEAM, UCL, Belgium 
-%This program is free software: you can redistribute it and/or modify
-%it under the terms of the GNU General Public License as published by
-%the Free Software Foundation, either version 3 of the License, or
-%(at your option) any later version.
+%This program, the COST2100 channel model, is free software: you can 
+%redistribute it and/or modify it under the terms of the GNU General Public 
+%License as published by the Free Software Foundation, either version 3 of 
+%the License, or (at your option) any later version.
 %
-%This program is distributed in the hope that it will be useful,
-%but WITHOUT ANY WARRANTY; without even the implied warranty of
-%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%GNU General Public License for more details.
+%This program is distributed in the hope that it will be useful, but 
+%WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+%or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+%for more details.
 %
-%You should have received a copy of the GNU General Public License
-%along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%If you use it for scientific purposes, please consider citing it in line 
+%with the description in the Readme-file, where you also can find the 
+%contributors.
+%
+%You should have received a copy of the GNU General Public License along 
+%with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+% Consider just one position
+BS.pos = BS_pos;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Parameters
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-d_MS_BS = calc_dist(BS.pos, MS.pos); %Distance between MS and BS
-lambda = paraEx.c0/paraEx.freq; %Wavelength 
-pathloss = calc_pathloss(BS.pos,MS.pos,paraEx);%Compute the pathloss 
-tau_0=d_MS_BS/paraEx.c0; %Delay of LOS
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Determine the cluster activity
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-VRBS = VR(find(VRtable(BS.idx,:,1)==1),:); %VRs belong to BS
-VRIdx = find(VRtable(BS.idx,:,1)==1); %VRs index
-numVRBS = length(VRBS); %Number of VRs belong to BS
-% save VRBS VRBS 
-d_MS_VR = zeros(1,numVRBS);%Distance MS-VRs
-for m = 1:numVRBS
-    d_MS_VR(m) = calc_dist(MS.pos(1:2),VRBS(m,:));
-end
-% save d_MS_VR d_MS_VR 
-active_VR = VRIdx(find(d_MS_VR < paraSt.r_c)); %Index of active VR
-% save active_VR active_VR
-% active_VR
-[tmpVal active_VR_ref] = find(d_MS_VR< paraSt.r_c); %Reference index of the active VR
-active_c = VRtable(BS.idx,active_VR,2); %Index of active clusters
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Pre-allocated data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-num_actc = 0;
+% Parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+lambda = paraEx.c0/paraEx.center_freq; % Wavelength 
+pathloss = calc_pathloss(BS.pos,MS.pos,paraEx); % Compute the pathloss 
+
+d_MS_BS = calc_dist(BS.pos, MS.pos); % Distance between MS and BS
+tau_0 = d_MS_BS/paraEx.c0; % Delay of LOS
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Determine the cluster activity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[active_MS_VR, active_BS_VR, active_c] = get_active_MS_VR(BS, MS, VRtable, MS_VR, BS_VR, BS_VR_len, paraSt);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Pre-allocated data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 a_VR = [];
-h = [];
 
-if length(active_VR)>0 %If there are active far cluster
-    active_c = active_c([true diff(sort(active_c))>0]); %Index of active clusters
- 
-    for m = 1:length(active_VR)
-        y = paraSt.l_c+d_MS_VR(active_VR_ref(m))-paraSt.r_c;
-        gainVR(m) = 1/2-atan(2*sqrt(2)*y/sqrt(lambda*paraSt.l_c))/pi; %VR gain
+if ~isempty(active_MS_VR) % If there are active far cluster
+
+    % MS-VR gain
+    gain_MS_VR = zeros(1, length(active_MS_VR));
+    for m = 1:length(active_MS_VR)
+        d_MS_VR = calc_dist(MS.pos(1:2), MS_VR(active_MS_VR(m),:));
+        y = d_MS_VR - (paraSt.r_c-paraSt.l_c);
+        gain_MS_VR(m) = 1/2-atan(2*sqrt(2)*y/sqrt(lambda*paraSt.l_c))/pi;
     end
 
+    % A_VR for cluster
+    % Now, it can happen that several MS-VRs are associated with the same
+    % cluster, if 'MS VR groups' of size larger than one are used. This
+    % situation is not desirable since, for a given MS, it would mean that
+    % VRs are largely overlapping, and contributions from the cluster are
+    % counted twice! We deal with it by defining a 'effective VR MS'. The
+    % definition is such that the effective VR is kind of the union of the
+    % constituent VRs.
+    a_MS_VR = zeros(1, length(active_c));
+    a_MS_VR_idx = zeros(1, length(active_c));
     for m = 1:length(active_c)
-        a_VR(m) = max(gainVR( (find(VRtable(BS.idx,active_VR,2)==active_c(m)) ))); %A_VR for cluster
+        active_MS_VR_cluster_m_bitmap = VRtable(BS.idx,active_MS_VR,2)==active_c(m);
+        [a_MS_VR(m),a_MS_VR_idx(m)] = max(gain_MS_VR.*active_MS_VR_cluster_m_bitmap);
     end
-
+    
+    % To all effects, in what follows we can restrict ourselves to
+    % active_MS_VR_eff, and forget about active_MS_VR
+    active_MS_VR_eff = active_MS_VR(a_MS_VR_idx);
+    active_MS_VR = active_MS_VR_eff;
+    
+    % BS-VR gain
+    a_BS_VR = zeros(1, length(active_c));
     for m = 1:length(active_c)
+        d_BS_VR = calc_dist(BS.pos(1:2),BS_VR(active_c(m),:));
+        a_BS_VR(m) = sqrt(10^(d_BS_VR*BS_VR_slope(active_c(m))/10)); % Convert from dB to linear, and then to amplitude
+    end
+    
+    % A_VR including BS-BR gain
+    a_VR = a_MS_VR.*a_BS_VR;
+
+    h_far = zeros(paraSt.n_mpc, length(active_c), 10); % Store all MPC information
+    
+    % Loop over active clusters
+    for m = 1:length(active_c) 
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %Determine the cluster power attenuation
+        % Determine the cluster power attenuation
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        d_BS_c_MS = calc_dist(BS.pos,cluster(active_c(m)).pos_c_BS)+calc_dist(MS.pos,cluster(active_c(m)).pos_c_MS); %Propagation distance
-        tau_m = d_BS_c_MS/paraEx.c0+cluster(active_c(m)).tau_c_link; %Cluster delay
-        a_c=max(exp((-paraSt.k_tau*(tau_m-tau_0)*1e6)),exp((-paraSt.k_tau*(paraSt.tau_b-tau_0)*1e6))); % Attenuation of clusters
+        d_BS_c_MS = calc_dist(BS.pos, cluster(active_c(m)).pos_c_BS)+calc_dist(MS.pos, cluster(active_c(m)).pos_c_MS); % Propagation distance (BS-cluster + cluster-MS)
+        tau_m = d_BS_c_MS/paraEx.c0+cluster(active_c(m)).tau_c_link; % Cluster delay
+        a_c = max(exp((-paraSt.k_tau*(tau_m-tau_0)*1e6)), exp((-paraSt.k_tau*(paraSt.tau_b-tau_0)*1e6))); % Attenuation of clusters
 
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        %Create the channels
+        % Create the channels
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        for n = 1:paraSt.n_mpc
-            direct_mpc_BS = squeeze(mpc(active_c(m)).pos_BS(n,:)) - BS.pos; %Vector from mpc to BS;
-            [phi_mpc_BS theta_mpc_BS r_mpc_BS] = cart2sph(direct_mpc_BS(1),direct_mpc_BS(2),direct_mpc_BS(3));
-            direct_mpc_MS = squeeze(mpc(active_c(m)).pos_MS(n,:)) - MS.pos; %Vector from mpc to MS;
-            [phi_mpc_MS theta_mpc_MS r_mpc_MS] = cart2sph(direct_mpc_MS(1),direct_mpc_MS(2),direct_mpc_MS(3));
+        for n = 1:paraSt.n_mpc % Loop over MPC
+            direct_mpc_BS = squeeze(mpc(active_c(m)).pos_BS(n,:)) - BS.pos; % Vector from MPC to BS
+            [phi_mpc_BS, theta_mpc_BS, r_mpc_BS] = cart2sph(direct_mpc_BS(1), direct_mpc_BS(2), direct_mpc_BS(3));
+            direct_mpc_MS = squeeze(mpc(active_c(m)).pos_MS(n,:)) - MS.pos; % Vector from MPC to MS
+            [phi_mpc_MS, theta_mpc_MS, r_mpc_MS] = cart2sph(direct_mpc_MS(1), direct_mpc_MS(2), direct_mpc_MS(3));
             tau_mpc = (r_mpc_BS+r_mpc_MS)/paraEx.c0 + cluster(active_c(m)).tau_c_link;
-            amp_h = a_VR(m)*sqrt( cluster(active_c(m)).shadow_f*a_c )*mpc(active_c(m)).a_mpc(n)*pathloss*exp(-1j*2*pi*paraEx.freq*tau_mpc);
-            %Original%Transition*sqrt(shadow fading*cluster attenuation*mpc attenuation)*pathloss*mpc phase
+            
+            % MPC gain function
+            mpc_gain_pos = squeeze(mpc(active_c(m)).gain_center(n, :))+MS_VR(active_MS_VR(m), :); % Center location of MPC gain function [x, y]
+                        
+            % Two dimensional Gauss function
+            sigma_x = paraSt.mpc_gain_sigma;
+            sigma_y = paraSt.mpc_gain_sigma;
+            a_mpc_gain = exp(-1*((mpc_gain_pos(1)-MS.pos(1))^2/(2*sigma_x^2)+(mpc_gain_pos(2)-MS.pos(2))^2/(2*sigma_y^2)));
 
-            h( (m-1)*paraSt.n_mpc+1+n,: ) = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h]; %The unfiletered impulse response, angle in radii
+            % Magnitude of the MPC amplitude
+            if pow2db(abs(a_mpc_gain)^2) < -60 % Remove MPCs with power gain lower than -X dB
+                % -80 dB: 10 m away from peak location (for lifetime = 2 m)
+                % -50 dB: 8 m away from gain function peak location
+                % -40 dB: 7.2 m away from peak location
+                amp_h = 0;
+            else
+                % Note that pathloss has amplitude 'dimension'
+                amp_h = a_VR(m)*sqrt( a_c*cluster(active_c(m)).shadow_f )*a_mpc_gain*mpc(active_c(m)).a_mpc(n)*pathloss;
+            end           
+            
+            % Polarization matrix
+            amp_vv = mpc(active_c(m)).vv(n);
+            amp_vh = mpc(active_c(m)).vh(n);
+            amp_hh = mpc(active_c(m)).hh(n);
+            amp_hv = mpc(active_c(m)).hv(n);
+            
+            % The unfiltered impulse response, angle in radian
+            h_far(n, m, :) = [phi_mpc_BS, theta_mpc_BS, phi_mpc_MS, theta_mpc_MS, tau_mpc, amp_h, amp_vv, amp_vh, amp_hh, amp_hv];
         end
-        channel.a_c(m) = a_c; %The cluster power attenuation
+        % Record the cluster power attenuation
+        channel.a_c(m) = a_c; 
     end
-
-    num_actc = length(active_c);
+    
+    h = reshape(h_far, [], 10);
+else
+    h = [];
 end
 
-%Get the MPCs from local clusters
-if BS.cluster_local.active
+% Local cluster at BS side
+if BS.cluster_local.active 
+    
+    h_local_BS = zeros(paraSt.n_mpc, 10);
+       
     for n = 1:paraSt.n_mpc
-        direct_mpc_BS = squeeze(BS.mpc_local.pos_BS(n,:)) - BS.pos; %Vector from mpc to BS;
-        [phi_mpc_BS theta_mpc_BS r_mpc_BS] = cart2sph(direct_mpc_BS(1),direct_mpc_BS(2),direct_mpc_BS(3));
-        direct_mpc_MS = squeeze(BS.mpc_local.pos_MS(n,:)) - MS.pos; %Vector from mpc to MS;
-        [phi_mpc_MS theta_mpc_MS r_mpc_MS] = cart2sph(direct_mpc_MS(1),direct_mpc_MS(2),direct_mpc_MS(3));
+        if (norm(MS.mpc_local.pos_BS(n,:) - MS.mpc_local.pos_MS(n,:))>0)
+            error('Local clusters are single clusters.');
+        end
+        direct_mpc_BS = squeeze(BS.mpc_local.pos_BS(n,:)) - BS.pos; % Vector from MPC to BS
+        [phi_mpc_BS, theta_mpc_BS, r_mpc_BS] = cart2sph(direct_mpc_BS(1), direct_mpc_BS(2), direct_mpc_BS(3));
+        direct_mpc_MS = squeeze(BS.mpc_local.pos_MS(n,:)) - MS.pos; % Vector from MPC to MS
+        [phi_mpc_MS, theta_mpc_MS, r_mpc_MS] = cart2sph(direct_mpc_MS(1), direct_mpc_MS(2), direct_mpc_MS(3));
         tau_mpc = (r_mpc_BS+r_mpc_MS)/paraEx.c0 + BS.cluster_local.tau_c_link;
-        
-        amp_h = sqrt( BS.cluster_local.shadow_f )*BS.mpc_local.a_mpc(n)*pathloss*exp(-1j*2*pi*paraEx.freq*tau_mpc);
 
-        h( num_actc*paraSt.n_mpc+1+n,: ) = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h]; %The unfiletered impulse response, angle in radii
+        % Magnitude of the MPC amplitude
+        amp_h = sqrt( BS.cluster_local.shadow_f )*BS.mpc_local.a_mpc(n)*pathloss;
+        
+        % Polarization matrix
+        amp_vv = mpc(active_c(m)).vv(n);
+        amp_vh = mpc(active_c(m)).vh(n);
+        amp_hh = mpc(active_c(m)).hh(n);
+        amp_hv = mpc(active_c(m)).hv(n);
+        
+         % The unfiltered impulse response, angle in radian
+        h_local_BS(n, :) = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h amp_vv amp_vh amp_hh amp_hv];
     end
-    num_actc = num_actc+1;
+else
+    h_local_BS = [];
 end
 
-if MS.cluster_local.active
+% Local cluster at MS side
+if MS.cluster_local.active 
+    
+    h_local_MS = zeros(paraSt.n_mpc, 10);
+      
     for n = 1:paraSt.n_mpc
-        direct_mpc_BS = squeeze(MS.mpc_local.pos_BS(n,:)) - BS.pos; %Vector from mpc to BS;
-        [phi_mpc_BS theta_mpc_BS r_mpc_BS] = cart2sph(direct_mpc_BS(1),direct_mpc_BS(2),direct_mpc_BS(3));
-        direct_mpc_MS = squeeze(MS.mpc_local.pos_MS(n,:)) - MS.pos; %Vector from mpc to MS;
-        [phi_mpc_MS theta_mpc_MS r_mpc_MS] = cart2sph(direct_mpc_MS(1),direct_mpc_MS(2),direct_mpc_MS(3));
+        if (norm(MS.mpc_local.pos_BS(n,:) - MS.mpc_local.pos_MS(n,:))>0)
+            error('Local clusters are single clusters.');
+        end
+        direct_mpc_BS = squeeze(MS.mpc_local.pos_BS(n,:)) - BS.pos; % Vector from MPC to BS
+        [phi_mpc_BS, theta_mpc_BS, r_mpc_BS] = cart2sph(direct_mpc_BS(1),direct_mpc_BS(2),direct_mpc_BS(3));
+        direct_mpc_MS = squeeze(MS.mpc_local.pos_MS(n,:)) - MS.pos; % Vector from MPC to MS
+        [phi_mpc_MS, theta_mpc_MS, r_mpc_MS] = cart2sph(direct_mpc_MS(1),direct_mpc_MS(2),direct_mpc_MS(3));
         tau_mpc = (r_mpc_BS+r_mpc_MS)/paraEx.c0 + MS.cluster_local.tau_c_link;
 
-        amp_h = sqrt( MS.cluster_local.shadow_f )*MS.mpc_local.a_mpc(n)*pathloss*exp(-1j*2*pi*mod(paraEx.freq*tau_mpc,1));
+        % MPC gain function
+        if (norm(MS.mpc_local.pos_BS(n,1:2) - MS.mpc_local.gain_center(n,:))>0)
+%Obs!               error('With local clusters, the cluster center is the gain center.');
+        end
+        mpc_gain_pos = squeeze(MS.mpc_local.gain_center(n, :, :)); % Center location of MPC gain function [x, y]
 
-        h( num_actc*paraSt.n_mpc+1+n,: ) = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h]; %The unfiletered impulse response, angle in radii
+        % Two dimensional Gauss function
+        sigma_x = paraSt.mpc_gain_sigma;
+        sigma_y = paraSt.mpc_gain_sigma;
+        a_mpc_gain = exp(-1*((mpc_gain_pos(1)-MS.pos(1))^2/(2*sigma_x^2)+(mpc_gain_pos(2)-MS.pos(2))^2/(2*sigma_y^2)));
+        
+        if pow2db(abs(a_mpc_gain)^2) < -60
+            % -80 dB: 10 m away from gain function peak location (3 dB power decay: 2 m)
+            % -50 dB: 8 m away from gain function peak location (3 dB power decay: 2 m)
+            % -40 dB: 7.2 m away from peak location (3 dB power decay: 2 m)
+            amp_h = 0;
+        else
+            % Magnitude of the MPC amplitude
+            amp_h = sqrt( MS.cluster_local.shadow_f )*MS.mpc_local.a_mpc(n)*a_mpc_gain*pathloss;
+        end
+        
+        % Polarization matrix
+        amp_vv = mpc(active_c(m)).vv(n);
+        amp_vh = mpc(active_c(m)).vh(n);
+        amp_hh = mpc(active_c(m)).hh(n);
+        amp_hv = mpc(active_c(m)).hv(n);
+
+        % The unfiltered impulse response, angle in radians
+        h_local_MS(n, :) = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h amp_vv amp_vh amp_hh amp_hv]; 
     end
+else
+    h_local_MS = [];
 end
 
-channel.h = h; %H record
-channel.pathloss = pathloss; %Pathloss record
-channel.active_c = active_c; %Index of active clusters record
-channel.a_VR = a_VR; %VR attenuation record
-channel.h_los = get_channel_los(channel, BS, MS, paraEx,paraSt); %LOS 
+% Contains information of all MPCs, except for the LOS
+h = [h; h_local_BS; h_local_MS]; 
+
+if isempty(h)
+    error('Empty h, cluster');
+end
+
+% NOTE: The following collides with code in visual_channel.m
+% Only keep MPCs with non-zero amplitude
+h = h(abs(h(:, 6))>0, :);
+
+if isempty(h)
+    error('Empty h, mpc');
+end
+
+channel.h = h; % H record
+channel.pathloss = pathloss; % Pathloss record
+channel.active_c = active_c; % Index of active clusters record
+channel.a_VR = a_VR; % VR attenuation record
+channel.h_los = get_channel_los(channel, BS, BS_pos, MS, paraEx,paraSt); % LOS
+
+function [active_MS_VR_Idx, active_BS_VR_Idx, active_c_Idx] = get_active_MS_VR(BS, MS, VRtable, MS_VR, BS_VR, BS_VR_len, paraSt)
+
+% Find which MS-VRs are, via interaction objects (IOs), reachable from BS
+MS_VR_Idx = find(VRtable(BS.idx, :, 1)==1);
+
+% Only MS-VRs sufficiently close to the MS current position are active
+d_MS_VR = zeros(1, length(MS_VR_Idx));
+for m = 1:length(MS_VR_Idx)
+    d_MS_VR(m) = calc_dist(MS.pos(1:2), MS_VR(m,:));
+end
+active_MS_VR_Idx = MS_VR_Idx(d_MS_VR < paraSt.r_c);
+
+% NOTE: Because currently BS-VRs only support one BS, all BS VRs belong to
+% it. This might need to be changed when support for multiple BSs is added. 
+
+% Only BS-VRs sufficiently close to the BS current array section are
+% active (for compact arrays we have infinite BR_VR_len) 
+d_BS_VR = zeros(1, size(BS_VR, 1));
+for m = 1:size(BS_VR, 1)
+    d_BS_VR(m) = calc_dist(BS.pos(1:2), BS_VR(m,:));
+end
+active_BS_VR_Idx = find(d_BS_VR < BS_VR_len/2);
+
+% A given MS-VR is active if a BS-VR can be found which illuminates the
+% same IO, and vice versa
+active_MS_c_Idx = VRtable(BS.idx, active_MS_VR_Idx, 2);
+% Note the simple mapping BS-VR to illuminated IO. This is because no
+% 'BS VR groups' have been introduced
+active_BS_c_Idx = active_BS_VR_Idx;
+active_c_Idx = intersect(active_MS_c_Idx,active_BS_c_Idx);
+if isempty(active_c_Idx)
+    error('No active cluster! Please restart simulation.');
+end
+
+% Last, find the inverse mappings to map active clusters to active MS VRs, and
+% active clusters to active BS VRs
+active_BS_VR_Idx = active_c_Idx;
+% The latter is a bit involved, since the forward mapping MS-VR to cluster
+% is not injective (one-to-one). In particular, active_MS_VR_Idx might be
+% longer than active_c_Idx if 'MS VR groups' of size larger than one are
+% used. This will be handled by the parent routine by defining a
+% 'reference' MS-VR.
+active_MS_VR_Idx = active_MS_VR_Idx(ismember(active_MS_c_Idx,active_c_Idx));

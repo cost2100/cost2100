@@ -1,13 +1,13 @@
 function [Gtx, Grx] = get_dipole_G(Ntx,Nrx)
-%get_dipole_G Get the dipole array antenna responses
-%Default call 
+%GET_DIPOLE_G Get the dipole array antenna response
+%
+%Default call:
+%[Gtx, Grx] = get_dipole_G(Ntx,Nrx)
 %-------
 %Input:
-%-------
-%
-%Ntx: Number of transmit antenna
-%Nrx: Number of receive antenna
-%
+%------
+%Ntx: Number of transmit antennas
+%Nrx: Number of receive antennas
 %------
 %Output:
 %------
@@ -15,23 +15,27 @@ function [Gtx, Grx] = get_dipole_G(Ntx,Nrx)
 %Grx: Antenna response at Rx side
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Copyright (C)2008 Meifang Zhu, Lund University, Sweden
-%This file is part of cost2100.
-%This program is free software: you can redistribute it and/or modify
-%it under the terms of the GNU General Public License as published by
-%the Free Software Foundation, either version 3 of the License, or
-%(at your option) any later version.
+%This file is a part of the COST2100 channel model.
 %
-%This program is distributed in the hope that it will be useful,
-%but WITHOUT ANY WARRANTY; without even the implied warranty of
-%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%GNU General Public License for more details.
+%This program, the COST2100 channel model, is free software: you can 
+%redistribute it and/or modify it under the terms of the GNU General Public 
+%License as published by the Free Software Foundation, either version 3 of 
+%the License, or (at your option) any later version.
 %
-%You should have received a copy of the GNU General Public License
-%along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%This program is distributed in the hope that it will be useful, but 
+%WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+%or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+%for more details.
+%
+%If you use it for scientific purposes, please consider citing it in line 
+%with the description in the Readme-file, where you also can find the 
+%contributors.
+%
+%You should have received a copy of the GNU General Public License along 
+%with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% therotical dipole antenna gain
+% Therotical dipole antenna gain
 Theta = (-90:1:90)/180*pi;
 Phi = (0:1:360)/180*pi;
 Np = length(Phi);
@@ -48,9 +52,8 @@ for nn = 1:Np
     end
 end
 
-
-% generate the response for linear antenna array, when they are placed with
-% distance half wavelength
+% Generate the response for linear antenna array, when they are placed with
+% distance half a wavelength
 Anttx = zeros(Ntx,Np,Nt);
 for nn = 1:Ntx
     for mm = 1:size(G,1)

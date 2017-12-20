@@ -1,26 +1,29 @@
-function draw_ellipsoid(center,radius,rotate,weight,alpha_val,control,figure_h)
+function draw_ellipsoid(center, radius, rotate, weight, alpha_val, control, figure_h)
 %DRAW_ELLIPSOID Drawing function to draw 3D ellipsoid
-%draw_ellipsoid(center,radius,rotate,weight,alpha_val,control,figure_h)
-%draw a ellipsoid in fig_h at position center with radius and tilt angle 
+%draw_ellipsoid(center, radius, rotate, weight, alpha_val, control, figure_h)
+%draw a ellipsoid in figure_h at position center with radius and tilt angle 
 %rotate. The color is determined by weight and the transparency is 
-%determined by alpha_val.
+%determined by alpha_val. control is the control option
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Copyright (C)2008 LIU Ling-Feng ,Université catholique de Louvain, Belgium
-%This file is part of cost2100_model.
-
-%cost2100_model is free software: you can redistribute it and/or modify
-%it under the terms of the GNU General Public License as published by
-%the Free Software Foundation, either version 3 of the License, or
-%(at your option) any later version.
-
-%cost2100_model is distributed in the hope that it will be useful,
-%but WITHOUT ANY WARRANTY; without even the implied warranty of
-%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%GNU General Public License for more details.
-
-%You should have received a copy of the GNU General Public License
-%along with cost2100_model.  If not, see <http://www.gnu.org/licenses/>.
+%This file is a part of the COST2100 channel model.
+%
+%This program, the COST2100 channel model, is free software: you can 
+%redistribute it and/or modify it under the terms of the GNU General Public 
+%License as published by the Free Software Foundation, either version 3 of 
+%the License, or (at your option) any later version.
+%
+%This program is distributed in the hope that it will be useful, but 
+%WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+%or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+%for more details.
+%
+%If you use it for scientific purposes, please consider citing it in line 
+%with the description in the Readme-file, where you also can find the 
+%contributors.
+%
+%You should have received a copy of the GNU General Public License along 
+%with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 [x y z] = sphere;

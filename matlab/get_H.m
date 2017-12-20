@@ -1,47 +1,56 @@
-function H = get_H(channel, txFull, rxFull, txRot,rxRot,paraEx)
+function H = get_H(channel, txFull, rxFull, txRot, rxRot, paraEx)
 %GET_H Get the MIMO channel impulse reponse matrix
-%Default call 
+%
+%Default call:
+%H = get_H(channel, txFull, rxFull, txRot, rxRot, paraEx)
 %-------
 %Input:
 %-------
-%
-%channel: channel information
+%channel: Channel information
 %txFull: Tx antenna array radiation pattern
 % .antennaResponse[numAntenna,azimuth,elevation]
 % .azimuthRange
 % .elevationRange
-% .dAngle: angle resolution
+% .dAngle: Angle resolution
 %rxFull: Rx antenna array radiation pattern
-% see above structure of txFull
+%see above structure of txFull
 %txRot: Tx antenna array rotation [azi ele]
 %rxRot: Rx antenna array rotation [azi ele]
-%paraEx= external parameters
-%
+%paraEx: External parameters
 %------
 %Output:
 %------
-%H: filtered MIMO channel IR matrix
+%H: MIMO channel impulse response matrix
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Copyright (C)2008 LIU Ling-Feng, ICTEAM, UCL, Belgium 
-%This file is part of cost2100.
-%This program is free software: you can redistribute it and/or modify
-%it under the terms of the GNU General Public License as published by
-%the Free Software Foundation, either version 3 of the License, or
-%(at your option) any later version.
+%This file is a part of the COST2100 channel model.
 %
-%This program is distributed in the hope that it will be useful,
-%but WITHOUT ANY WARRANTY; without even the implied warranty of
-%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%GNU General Public License for more details.
+%This program, the COST2100 channel model, is free software: you can 
+%redistribute it and/or modify it under the terms of the GNU General Public 
+%License as published by the Free Software Foundation, either version 3 of 
+%the License, or (at your option) any later version.
 %
-%You should have received a copy of the GNU General Public License
-%along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%This program is distributed in the hope that it will be useful, but 
+%WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+%or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+%for more details.
+%
+%If you use it for scientific purposes, please consider citing it in line 
+%with the description in the Readme-file, where you also can find the 
+%contributors.
+%
+%You should have received a copy of the GNU General Public License along 
+%with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-type=paraEx.band;
-sample_rate = paraEx.sample_rate; %IR sampling rate
-tauIndMax = ceil(paraEx.delay_max/sample_rate); %The maximum delay index
+if paraEx.freq_start==paraEx.freq_stop
+    type = 'Narrowband'; 
+else
+    type = 'Wideband'; 
+end
+
+sample_rate = paraEx.sample_rate; % IR sampling rate
+tauIndMax = ceil(paraEx.delay_max/sample_rate); % Maximum delay index
 M=length(txFull.antennaResponse(:,1,1));
 N=length(rxFull.antennaResponse(:,1,1));
 txAziRange=txFull.azimuthRange;
@@ -58,9 +67,9 @@ end
 
 for m = 1:length(channel.h(:,1))
     tauInd = ceil(channel.h(m,5)/sample_rate);
-    if tauInd>tauIndMax %If out the range of delay
+    if tauInd > tauIndMax % If out of the range of delay
         continue;
-    elseif tauInd<=0
+    elseif tauInd <= 0
         continue;
     else
         aod=channel.h(m,1);
@@ -86,21 +95,19 @@ for m = 1:length(channel.h(:,1))
         Rx=squeeze(rxFull.antennaResponse(:,rxAziInd,rxEleInd));
         
         switch type
-            case 'Narrowband' %Narrow-band
+            case 'Narrowband' 
                 H = H+channel.h(m,6)*sqrt(Tx)*sqrt(conj(Rx'));
-            case 'Wideband' %Wide-band
-                
+            case 'Wideband' 
                 H(tauInd,:,:) = squeeze(H(tauInd,:,:))+channel.h(m,6)*sqrt(Tx)*sqrt(conj(Rx'));
         end
     end
 end
         
-%LOS
+% LOS
 tauInd=ceil(channel.h_los(5)/sample_rate);
-if tauInd>tauIndMax %If out the range of delay    
-elseif tauInd<=0
+if tauInd > tauIndMax % If out of the range of delay    
+elseif tauInd <= 0
 else
-    
     aod=channel.h_los(1);
     eod=channel.h_los(2);
     bsv=[sin(eod)*cos(aod) sin(eod)*sin(aod) cos(eod)];
@@ -122,9 +129,9 @@ else
     Tx=squeeze(txFull.antennaResponse(:,txAziInd,txEleInd));
     Rx=squeeze(rxFull.antennaResponse(:,rxAziInd,rxEleInd));
     switch type
-        case 'Narrowband' %Narrow-band
+        case 'Narrowband'
             H = H+channel.h_los(6)*sqrt(Tx)*sqrt(conj(Rx'));
-        case 'Wideband' %Wide-band
+        case 'Wideband'
             H(tauInd,:,:) = squeeze(H(tauInd,:,:))+channel.h_los(6)*sqrt(Tx)*sqrt(conj(Rx'));
     end
 end

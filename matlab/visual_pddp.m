@@ -1,24 +1,26 @@
-function visual_pddp( channel, paraEx, paraSt)
+function visual_pddp(channel, paraEx, paraSt)
 %VISUAL_PDDP Visualization of power delay direction profile 
-%Default call: visual_pddp( channel, paraEx, paraSt)
-%
-%See also: get_channel, cost2100
+%Default call: visual_pddp(channel, paraEx, paraSt)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Copyright (C)2008 LIU Ling-Feng, ICTEAM, UCL, Belgium 
-%This file is part of cost2100.
-%This program is free software: you can redistribute it and/or modify
-%it under the terms of the GNU General Public License as published by
-%the Free Software Foundation, either version 3 of the License, or
-%(at your option) any later version.
+%This file is a part of the COST2100 channel model.
 %
-%This program is distributed in the hope that it will be useful,
-%but WITHOUT ANY WARRANTY; without even the implied warranty of
-%MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-%GNU General Public License for more details.
+%This program, the COST2100 channel model, is free software: you can 
+%redistribute it and/or modify it under the terms of the GNU General Public 
+%License as published by the Free Software Foundation, either version 3 of 
+%the License, or (at your option) any later version.
 %
-%You should have received a copy of the GNU General Public License
-%along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%This program is distributed in the hope that it will be useful, but 
+%WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+%or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
+%for more details.
+%
+%If you use it for scientific purposes, please consider citing it in line 
+%with the description in the Readme-file, where you also can find the 
+%contributors.
+%
+%You should have received a copy of the GNU General Public License along 
+%with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 tau_max_stack = [];
@@ -32,8 +34,8 @@ end
 
 tau_max = max(tau_max_stack);
 tau_min = 0;
-%We assume isotropic tranceivers
-Ptau = zeros(length(channel),tau_max+21); %Power-delay
+% We assume isotropic tranceivers
+Ptau = zeros(length(channel),tau_max+21); % Power-delay
 Paod = zeros(length(channel),361);
 Peod = zeros(length(channel),181);
 Paoa = zeros(length(channel),361);
@@ -48,8 +50,7 @@ for m = 1:length(channel)
         ind_eoa = round(h_tmp(:,4)*180/pi)+91;        
         
         amp_h = h_tmp(:,6);
-        
-        
+            
         if length(ind_aod)>0
             for n = 1:length(ind_tau)
                 if ind_tau(n)>0
@@ -78,7 +79,7 @@ for m = 1:length(channel)
             end
         end
     end
-    %LOS
+    % LOS
     tau_0 = round(channel{m}.h_los(5)/paraEx.sample_rate)+1;
     aod_0 = round(channel{m}.h_los(1)*180/pi)+181;
     eod_0 = round(channel{m}.h_los(2)*180/pi)+91;
@@ -149,7 +150,7 @@ ylabel('Time line[S]')
 setFontsize
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%Unify the color axis
+% Unify the color axis
 val = (max(caxis_stack)-min(caxis_stack))*0.6;
 figure(fig1)
 caxis([min(caxis_stack)+val max(caxis_stack)])
@@ -162,7 +163,3 @@ caxis([min(caxis_stack)+val max(caxis_stack)])
 figure(fig5)
 caxis([min(caxis_stack)+val max(caxis_stack)])
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-
-

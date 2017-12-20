@@ -18,5 +18,10 @@ cost2100.m:
 a new variable, Nlink, for single and multiple link simulation is added.
 
 2013.2.15 Meifang Zhu
-get_dipole_G: generates a theoratical dipole array response, the number of antennas can be set by users and the distance between two dipole is half a wavelentgh. Renamed the scenarios to reflect the measured environments.
+get_dipole_G: generates a theoretical dipole array response, the number of antennas can be set by users and the distance between two dipole 
+is half a wavelentgh. Renamed the scenarios to reflect the measured environments.
 
+2017.10.20 Jose Flordelis, Sara Gunnarsson
+Merged MAMMOET Massive MIMO extension with previous code base. 
+Code restructured for back-compatibility. 
+Some bugs have been fixed.
