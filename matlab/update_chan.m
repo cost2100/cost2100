@@ -41,9 +41,8 @@ MS_new = MS;
 pos_MS_old = MS.pos;
 pos_MS_new = pos_MS_old + MS.velo/paraEx.snap_rate;
 
-for m = 1:paraSt.n_mpc % Only update the local cluster at MS side 
-    d_local_mpc_MS(m) = calc_dist(MS.mpc_local.pos_MS(m, 1:2), pos_MS_new(1:2)'); % Distance of old MPCs to new MS    
-end
+% Only update the local cluster at MS side 
+d_local_mpc_MS = sqrt(sum((repmat(pos_MS_new(1:2),paraSt.n_mpc,1) - MS.mpc_local.pos_MS(:,1:2)).^2,2));
 
 replace_mpc = find(d_local_mpc_MS > MS.cluster_local.a_c_MS); % Find MPCs out range of the local cluster
 
@@ -52,7 +51,7 @@ if length(replace_mpc)==0 % Then do nothing
 else % Update MPCs in local cluster
     for m = 1:length(replace_mpc)
         new_mpc(m, :) = randn(1, 3)*diag([MS.cluster_local.a_c_MS/3 MS.cluster_local.b_c_MS/3,MS.cluster_local.h_c_MS/3])+pos_MS_new;
-        while calc_dist(new_mpc(m, :),pos_MS_new)<MS.cluster_local.a_c_MS
+        while calc_dist(new_mpc(m, :),pos_MS_new) > MS.cluster_local.a_c_MS
             new_mpc(m, :) = randn(1, 3)*diag([MS.cluster_local.a_c_MS/3 MS.cluster_local.b_c_MS/3,MS.cluster_local.h_c_MS/3])+pos_MS_new;
         end
     end
@@ -61,6 +60,7 @@ else % Update MPCs in local cluster
     
     % MPC gain function peak position
     MS_new.mpc_local.gain_center(replace_mpc,:) = MS_new.mpc_local.pos_BS(replace_mpc,1:2); % [x, y]
+    MS_new.mpc_local.gain_radius(replace_mpc,:) = lognrnd_own(paraSt.mpc_gain_mu*(log(10)/10), paraSt.mpc_gain_sigma*(log(10)/10), length(replace_mpc), 1);
 end
 
 MS_new.cluster_local.p_c_MS = pos_MS_new;

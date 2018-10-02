@@ -56,6 +56,7 @@ for m = 1:n_c % Loop for number of clusters
         case 2 % Twin cluster
             mpc_BS_tmp = mpc_tmp*rotate_matrix(cluster(m).Phi_c_BS, cluster(m).Theta_c_BS);
             mpc_BS_tmp = mpc_BS_tmp + repmat(cluster(m).pos_c_BS, n_mpc, 1);
+            mpc_tmp = r*diag([cluster(m).a_c_MS/3 cluster(m).b_c_MS/3 cluster(m).h_c_MS/3]); % [spatial delay spread, width of cluster, height of cluster]
             mpc_MS_tmp = mpc_tmp*rotate_matrix(cluster(m).Phi_c_MS, cluster(m).Theta_c_MS);
             mpc_MS_tmp = mpc_MS_tmp + repmat(cluster(m).pos_c_MS, n_mpc, 1);                  
     end
@@ -64,7 +65,7 @@ for m = 1:n_c % Loop for number of clusters
     
     % Amplitudes shall be either Rayleigh-faded or modulated by the gain
     % function depending on the network parameters
-    if (paraSt.mpc_gain_sigma == Inf)
+    if (paraSt.mpc_gain_mu == Inf)
         P_S = randn(1, n_mpc)+1j*randn(1, n_mpc); % Complex Rayleigh distribution
         a_mpc = P_S/sqrt(sum(abs(P_S).^2)); % Normalized attenuation of each MPCs, complex amplitude
     else
@@ -78,20 +79,26 @@ for m = 1:n_c % Loop for number of clusters
     angle_gain_center = angle(exp(1j*2*pi*rand(n_mpc, 1)));
     % MPC gain peak location - relative to the cluster VR center
     if cluster(m).type==0 % Local cluster
-        rr = rand(n_mpc, 1);
-        mpc(m).gain_center = [cluster(m).b_c_MS*sqrt(rr).*cos(angle_gain_center), cluster(m).b_c_MS*sqrt(rr).*sin(angle_gain_center)];
+        mpc(m).gain_center = mpc(m).pos_BS(:,1:2); % [x, y], consistent with update_chan.m
+        mpc(m).gain_radius = lognrnd_own(paraSt.mpc_gain_mu*(log(10)/10), paraSt.mpc_gain_sigma*(log(10)/10), n_mpc, 1);
     else % Far cluster
         rr = rand(n_mpc, 1);
         mpc(m).gain_center = [paraSt.r_c*sqrt(rr).*cos(angle_gain_center), paraSt.r_c*sqrt(rr).*sin(angle_gain_center)];
+        mpc(m).gain_radius = lognrnd_own(paraSt.mpc_gain_mu*(log(10)/10), paraSt.mpc_gain_sigma*(log(10)/10), n_mpc, 1);
+        mpc(m).gain_radius(mpc(m).gain_radius<paraSt.l_c) = paraSt.l_c;
+        mpc(m).gain_radius(mpc(m).gain_radius>paraSt.r_c & mpc(m).gain_radius<Inf) = paraSt.r_c;
     end
     
-    % MPC polarization matrix
-    mpc_vh = sqrt(10.^((paraSt.mu_xpdv+paraSt.sigma_xpdv.*randn(n_mpc, 1))/10)).*exp(1j*2*pi*rand(n_mpc, 1));
-    mpc_hv = sqrt(10.^((paraSt.mu_xpdh+paraSt.sigma_xpdh.*randn(n_mpc, 1))/10)).*exp(1j*2*pi*rand(n_mpc, 1));
-    mpc_vv = sqrt(10.^((paraSt.mu_cpr+paraSt.mu_cpr.*randn(n_mpc, 1))/10)).*exp(1j*2*pi*rand(n_mpc, 1));
-    mpc_hh = sqrt(10.^((paraSt.mu_cpr+paraSt.mu_cpr.*randn(n_mpc, 1))/10)).*exp(1j*2*pi*rand(n_mpc, 1));
+    % MPC polarization matrix; see (3.45) in COST 2100 book.
+    XPDV = 10.^((paraSt.mu_xpdv+paraSt.sigma_xpdv.*randn(n_mpc, 1))/10);
+    XPDH = 10.^((paraSt.mu_xpdh+paraSt.sigma_xpdh.*randn(n_mpc, 1))/10);
+    CPR = 10.^((paraSt.mu_cpr+paraSt.sigma_cpr.*randn(n_mpc, 1))/10);
+    mpc_vv = exp(1j*2*pi*rand(n_mpc, 1));
+    mpc_vh = 1./sqrt(XPDV).*exp(1j*2*pi*rand(n_mpc, 1));
+    mpc_hv = 1./sqrt(XPDH.*CPR).*exp(1j*2*pi*rand(n_mpc, 1));
+    mpc_hh = 1./sqrt(CPR).*exp(1j*2*pi*rand(n_mpc, 1));
     
-    % Poliarization power normalization
+    % Polarization power normalization
     for idx_mpc = 1:n_mpc
          norm_factor = norm([mpc_vv(idx_mpc), mpc_vh(idx_mpc); mpc_hv(idx_mpc), mpc_hh(idx_mpc)], 'fro');
          

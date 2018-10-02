@@ -34,7 +34,6 @@ hold on
 for idx_MS_VR = 1:size(env.MS_VR, 1)
     draw_circ(env.MS_VR(idx_MS_VR, :), paraSt.r_c, '-.b', 1);
 end
-
 % BS positions
 for idx_BS = 1:paraEx.num_BS
     plot(paraEx.pos_BS(idx_BS, 1), paraEx.pos_BS(idx_BS, 2), 'rx', 'MarkerSize', 10, 'LineWidth', 3);
@@ -89,7 +88,9 @@ end
 hold off
 grid on
 axis equal
-xlim([paraEx.pos_BS(1, 1)-paraEx.BS_range*10, paraEx.pos_BS(1, 1)+paraEx.BS_range*10]);
+if (paraEx.BS_range>0)
+    xlim([paraEx.pos_BS(1, 1)-paraEx.BS_range*10, paraEx.pos_BS(1, 1)+paraEx.BS_range*10]);
+end
 title('Simulation area at BS side, cluster visibility regions (active ones for 1st user)');
 xlabel('x [m]'), ylabel('y [m]');
 
@@ -128,13 +129,21 @@ for idx_active_c = 1:length(active_cluster_idx)
                                  squeeze(env.MS_VR(env.VRtable(1, :, 2)==active_cluster_idx(idx_active_c), 1));
             mpc_peak_pos(:, 2) = env.mpc(active_cluster_idx(idx_active_c)).gain_center(:, 2)+...
                                  squeeze(env.MS_VR(env.VRtable(1, :, 2)==active_cluster_idx(idx_active_c), 2));
-            a_mpc_gain = exp(-1*((mpc_peak_pos(:, 1)-paraEx.pos_MS(1, 1)).^2/(2*paraSt.mpc_gain_sigma^2)+(mpc_peak_pos(:, 2)-paraEx.pos_MS(2)).^2/(2*paraSt.mpc_gain_sigma^2)));
+            mpc_gain_sigma = env.mpc(active_cluster_idx(idx_active_c)).gain_radius;
+            a_mpc_gain = exp(-1*((mpc_peak_pos(:, 1)-paraEx.pos_MS(1, 1)).^2./(2*mpc_gain_sigma.^2)+(mpc_peak_pos(:, 2)-paraEx.pos_MS(1,2)).^2./(2*mpc_gain_sigma.^2)));
             [sort_val, mpc_idx_sort] = sort(a_mpc_gain, 'ascend');
             scatter3(env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 1),...
                      env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 2),...
                      env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 3),...
                      10, pow2db(abs(a_mpc_gain(mpc_idx_sort)).^2), 'filled');
             colormap(jet), colorbar, caxis([-60, 0]);
+            
+            % MPC-VR 3-dB 
+            for mpc_vr_idx = find(a_mpc_gain.^2 > .5).'
+                draw_circ(mpc_peak_pos(mpc_vr_idx,1:2), mpc_gain_sigma(mpc_vr_idx)*sqrt(log(2)), 'b--', 1);
+                plot(mpc_peak_pos(mpc_vr_idx,1), mpc_peak_pos(mpc_vr_idx,2), 'k.', 'MarkerSize', 10);
+                draw_line(mpc_peak_pos(mpc_vr_idx,1:2), env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_vr_idx, 1:2), 'k--');
+            end
         case 2 % Twin cluster
             % From BS side
             pos_c_BS = env.cluster(active_cluster_idx(idx_active_c)).pos_c_BS;
@@ -156,6 +165,33 @@ for idx_active_c = 1:length(active_cluster_idx)
             
             % Link the twin clusters
             draw_line(pos_c_BS, pos_c_MS, 'k');
+            
+            % MPC
+            mpc_peak_pos(:, 1) = env.mpc(active_cluster_idx(idx_active_c)).gain_center(:, 1)+...
+                                 squeeze(env.MS_VR(env.VRtable(1, :, 2)==active_cluster_idx(idx_active_c), 1));
+            mpc_peak_pos(:, 2) = env.mpc(active_cluster_idx(idx_active_c)).gain_center(:, 2)+...
+                                 squeeze(env.MS_VR(env.VRtable(1, :, 2)==active_cluster_idx(idx_active_c), 2));
+            mpc_gain_sigma = env.mpc(active_cluster_idx(idx_active_c)).gain_radius;
+            a_mpc_gain = exp(-1*((mpc_peak_pos(:, 1)-paraEx.pos_MS(1, 1)).^2./(2*mpc_gain_sigma.^2)+(mpc_peak_pos(:, 2)-paraEx.pos_MS(1,2)).^2./(2*mpc_gain_sigma.^2)));
+            [sort_val, mpc_idx_sort] = sort(a_mpc_gain, 'ascend');
+            scatter3(env.mpc(active_cluster_idx(idx_active_c)).pos_MS(mpc_idx_sort, 1),...
+                     env.mpc(active_cluster_idx(idx_active_c)).pos_MS(mpc_idx_sort, 2),...
+                     env.mpc(active_cluster_idx(idx_active_c)).pos_MS(mpc_idx_sort, 3),...
+                     10, pow2db(abs(a_mpc_gain(mpc_idx_sort)).^2), 'filled');
+            colormap(jet), colorbar, caxis([-60, 0]);
+            scatter3(env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 1),...
+                     env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 2),...
+                     env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_idx_sort, 3),...
+                     10, pow2db(abs(a_mpc_gain(mpc_idx_sort)).^2), 'filled');
+            colormap(jet), colorbar, caxis([-60, 0]);
+            
+            % MPC-VR 3-dB 
+            for mpc_vr_idx = find(a_mpc_gain.^2 > .5).'
+                draw_circ(mpc_peak_pos(mpc_vr_idx,1:2), mpc_gain_sigma(mpc_vr_idx)*sqrt(log(2)), 'b--', 1);
+                plot(mpc_peak_pos(mpc_vr_idx,1), mpc_peak_pos(mpc_vr_idx,2), 'k.', 'MarkerSize', 10);
+                draw_line(mpc_peak_pos(mpc_vr_idx,1:2), env.mpc(active_cluster_idx(idx_active_c)).pos_MS(mpc_vr_idx, 1:2), 'k--');
+                draw_line(env.mpc(active_cluster_idx(idx_active_c)).pos_BS(mpc_vr_idx, 1:2), paraEx.pos_BS(1, 1:2), 'k--');
+            end
     end
 end
 % Plot MPCs

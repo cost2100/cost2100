@@ -45,22 +45,19 @@ end
 Ncluster = max(VRtable(1,:,2)); % Number of clusters
 
 % (1) Generate BS-VR length
-BS_VR_len = lognrnd_own(paraSt.bs_vr_mu, paraSt.bs_vr_sigma, 1, Ncluster); % [m]
+BS_VR_len = mexprnd_own(paraSt.bs_vr_mu, paraEx.BS_range, Ncluster, 1); % [m]
+%BS_VR_len = lognrnd_own(.7, 2, 1, Ncluster); % [m]
 
 % (2) Determine BS-VR location
 BS_VR = zeros(Ncluster, 2);
-if (paraSt.bs_vr_mu == Inf)
-    % Ignore BS VRs
-    BS_VR(:,1) = paraEx.pos_BS(1, 1); % BS-VR location, x
-    BS_VR(:,2) = paraEx.pos_BS(1, 2); % BS-VR location, y
-else
-    for idx_cluster = 1:Ncluster
-        BS_VR_pos_min = -1*(paraEx.BS_range+BS_VR_len(idx_cluster))/2;
-        BS_VR_pos_max = (paraEx.BS_range+BS_VR_len(idx_cluster))/2;
-        BS_VR(idx_cluster,1) = BS_VR_pos_min+(BS_VR_pos_max-BS_VR_pos_min).*rand(1)+paraEx.pos_BS(1, 1); % BS-VR location, x
-        BS_VR(idx_cluster,2) = paraEx.pos_BS(1, 2); % BS-VR location, y
-    end
+BS_VR(:,1) = paraEx.pos_BS(1, 1); % BS-VR location, x
+BS_VR(:,2) = paraEx.pos_BS(1, 2); % BS-VR location, y
+if (paraSt.bs_vr_mu < Inf)
+    % Offset center of BS-VR along the x-axis.
+    BS_VR_pos_span = paraEx.BS_range + BS_VR_len;
+    BS_VR_pos_offset = BS_VR_pos_span.*(rand(Ncluster,1)-.5);
+    BS_VR(:,1) = BS_VR(:,1) +  BS_VR_pos_offset; % BS-VR location, x
 end
 
 % (3) BS-VR power slope
-BS_VR_pow_slope = randn(1, Ncluster).*paraSt.bs_vr_slope_sigma+paraSt.bs_vr_slope_mu; % Normal distribution [dB/m]
+BS_VR_pow_slope = randn(Ncluster,1).*paraSt.bs_vr_slope_sigma+paraSt.bs_vr_slope_mu; % Normal distribution [dB/m]

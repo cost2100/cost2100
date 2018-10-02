@@ -11,19 +11,19 @@
 %------
 %Input:
 %------
-% Network : 'IndoorHall_5GHz', 'SemiUrban_300MHz', 'SemiUrban_CloselySpacedUser_2_6GHz', or 'SemiUrban_VLA_2_6GHz'
+% Network : 'IndoorHall_5GHz','SemiUrban_300MHz','Indoor_CloselySpacedUser_2_6GHz','SemiUrban_CloselySpacedUser_2_6GHz', or 'SemiUrban_VLA_2_6GHz'
 % Band : 'Wideband' or 'Narrowband'
 % Link: 'Multiple' or 'Single'
 % Antenna: 'SISO_omni', 'MIMO_omni', 'MIMO_dipole', 'MIMO_measured', 'MIMO_Cyl_patch', 'MIMO_VLA_omni'
 % scenario: 'LOS' or 'NLOS'        
-% freq: Frequency band [Hz}
+% freq: Frequency band [Hz]
 % snapRate: Number of snapshots per s
 % snapNum: Number of simulated snapshots         
 % BSPosCenter: Center position of BS array [x, y, z] [m]
 % BSPosSpacing: Inter-position spacing [m], for large arrays
 % BSPosNum: Number of positions at each BS site, for large arrays
-% MSPos: Position of MSs [m}
-% MSVelo: Velocity of MSs [m/s}
+% MSPos: Position of MSs [m]
+% MSVelo: Velocity of MSs [m/s]
 %
 %------
 %Output:
@@ -78,16 +78,16 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Choose a Network type out of 
-% {'IndoorHall_5GHz','SemiUrban_300MHz','SemiUrban_CloselySpacedUser_2_6GHz','SemiUrban_VLA_2_6GHz'} 
+% {'IndoorHall_5GHz','SemiUrban_300MHz','Indoor_CloselySpacedUser_2_6GHz','SemiUrban_CloselySpacedUser_2_6GHz','SemiUrban_VLA_2_6GHz'}
 % to parameterize the COST2100 model
-Network = 'IndoorHall_5GHz';
+Network = 'Indoor_CloselySpacedUser_2_6GHz';
 % In COST2100, # links = # BSs x # MSs
 % Set Link type to `Multiple' if you work with more than one link
 % Set Link type to `Single' otherwise
-Link = 'Single'; % {'Single', 'Multiple'}
+Link = 'Multiple';
 % Choose an Antenna type out of
 % {'SISO_omni', 'MIMO_omni', 'MIMO_dipole', 'MIMO_measured', 'MIMO_Cyl_patch', 'MIMO_VLA_omni'}
-Antenna = 'SISO_omni';
+Antenna = 'MIMO_Cyl_patch';
 % ...and type of channel: {'Wideband','Narrowband'}.
 Band = 'Wideband';
 
@@ -95,6 +95,7 @@ Band = 'Wideband';
 % 'IndoorHall_5GHz', 'Single', 'SISO_omni', 'Wideband'
 % 'SemiUrban_300MHz', 'Single', 'SISO_omni', 'Wideband'
 % 'SemiUrban_300MHz', 'Multiple', 'MIMO_omni', 'Wideband'
+% 'Indoor_CloselySpacedUser_2_6GHz', 'Multiple', 'MIMO_Cyl_patch', 'Wideband'
 % 'SemiUrban_CloselySpacedUser_2_6GHz', 'Multiple', 'MIMO_Cyl_patch', 'Wideband'
 % 'SemiUrban_VLA_2_6GHz', 'Single', 'MIMO_VLA_omni', 'Wideband'
 % 'SemiUrban_VLA_2_6GHz', 'Multiple', 'MIMO_VLA_omni', 'Wideband'
@@ -144,6 +145,33 @@ switch Network
                 BSPosSpacing = [0 0 0]; % Inter-position spacing (m), for large arrays
                 BSPosNum = 1; % Number of positions at each BS site, for large arrays
         end
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    case 'Indoor_CloselySpacedUser_2_6GHz'
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        scenario = 'LOS';
+        freq = [2.58e9 2.62e9]; % starting freq. - ending freq. [Hz]
+        snapNum = 50; % number of snapshots (given MSVelo, cover about .25 m)
+        snapRate = 50; % number of snapshots per second (sample at 0.05 m/snapshot)
+
+        % closely-spaced users
+        MSPos  = [   -2.5600    1.7300    2.2300;...
+                     -3.0800    1.7300    2.2300;...
+                     -2.5600    2.6200    2.5800;...
+                     -4.6400    1.7300    2.2300;...
+                     -2.5600    4.4000    3.3000;...
+                     -3.0800    3.5100    2.9400;...
+                     -3.6000    4.4000    3.3000;...
+                     -4.1200    4.4000    3.3000;...
+                     -4.1200    2.6200    2.5800]; % [x, y, z] (m)
+
+        MSVelo = repmat([-.25,0,0],9,1); % [x, y, z] (m/s)
+
+        BSPosCenter  = [0.30 -4.37 3.20]; % center position of BS array [x, y, z] (m)
+        BSPosSpacing = [0 0 0]; % inter-position spacing (m), for large arrays.
+        BSPosNum = 1; % number of positions at each BS site, for large arrays.
+        
+        BSPosCenter = BSPosCenter - mean(MSPos); % center users a origo
+        MSPos = MSPos - repmat(mean(MSPos),size(MSPos,1),1); % center users a origo
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 'SemiUrban_CloselySpacedUser_2_6GHz'
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -229,8 +257,8 @@ if 1
     switch Network
         case {'IndoorHall_5GHz','SemiUrban_300MHz'}   
              visual_channel(paraEx, paraSt, link, env);
-        case {'SemiUrban_VLA_2_6GHz','SemiUrban_CloselySpacedUser_2_6GHz'}   
-             visualize_channel_env(paraEx, paraSt, link, env);
+        case {'SemiUrban_VLA_2_6GHz','SemiUrban_CloselySpacedUser_2_6GHz','Indoor_CloselySpacedUser_2_6GHz'}   
+             visualize_channel_env(paraEx, paraSt, link, env); axis equal; view(2);
     end   
 end
 

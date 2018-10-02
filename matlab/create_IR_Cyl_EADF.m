@@ -1,4 +1,4 @@
-function ir_Cyl_patch = create_IR_Cyl_EADF(link, freq, delta_f, BSantEADF, MSantPattern)
+function ir_Cyl_patch = create_IR_Cyl_EADF(link, freq, delta_f, BSantEADF, MSantPattern, user_ant_rot_h, user_ant_rot_all_ss)
 %GET_IR_CYL Create impulse reponse produced by a compact cylindrical EADF array
 %containing 128 antenna ports or 64 dual-polarized patch antennas 
 %
@@ -13,6 +13,8 @@ function ir_Cyl_patch = create_IR_Cyl_EADF(link, freq, delta_f, BSantEADF, MSant
 %delta_f: The difference between two frequency bins
 %BSantEADF: EADF at BS side
 %MSantPattern: Antenna pattern at MS side
+%user_ant_rot_h: Users' initial orientation
+%user_ant_rot_all_ss: Users' overall rotation
 %------
 %Output:
 %------
@@ -63,27 +65,31 @@ user_ant_gain_v_temp = reshape(field_MS.E_theta(:, IDX_f), length(field_MS.theta
 user_ant_gain_h_temp = reshape(field_MS.E_phi(:, IDX_f), length(field_MS.theta), length(field_MS.phi));
 
 % Convert phi to [0, 360]
-user_ant_gain_v = user_ant_gain_v_temp(:, [(length(field_MS.phi)/2+1):length(field_MS.phi), 1:length(field_MS.phi)/2]); % v-polarized part
-user_ant_gain_h = user_ant_gain_h_temp(:, [(length(field_MS.phi)/2+1):length(field_MS.phi), 1:length(field_MS.phi)/2]); % h-polarized part
+user_ant_gain_v_temp = user_ant_gain_v_temp(:, [(length(field_MS.phi)/2+1):length(field_MS.phi), 1:length(field_MS.phi)/2]); % v-polarized part
+user_ant_gain_h_temp = user_ant_gain_h_temp(:, [(length(field_MS.phi)/2+1):length(field_MS.phi), 1:length(field_MS.phi)/2]); % h-polarized part
 
 % Initial rotation
-user_ant_rot_h = -1*pi+2*pi*rand(1, numMS); % User initial phase, ramdonly generate between -pi and pi
-user_ant_rot_all_ss = -1*pi+2*pi*rand(1, numMS); % [-pi, pi]
+if (nargin<6)
+    user_ant_rot_h = -1*pi+2*pi*rand(1, numMS); % User initial phase, ramdonly generate between -pi and pi
+end
+if (nargin<7)
+    user_ant_rot_all_ss = -1*pi+2*pi*rand(1, numMS); % [-pi, pi]
+end
 user_ant_rot_per_ss = user_ant_rot_all_ss/numSS;
 
 H_Cyl_patch = zeros(numSS, numFreq, numMS, Nant); % [snapshot, freq, user, BS ant]
 
 for idx_BS = 1:numBS
     for idx_MS = 1:numMS
+        
         % MS antenna initial rotation
         N_rot = round(user_ant_rot_h(idx_MS)/user_ant_phi_reso)+1; % Every phi_reso [rad] (1, numMS)
-        
-        if N_rot >= 0 
-            user_ant_gain_v = user_ant_gain_v(:, [(length(field_MS.phi)-N_rot):length(field_MS.phi), 1:(length(field_MS.phi)-N_rot-1)]);
-            user_ant_gain_h = user_ant_gain_h(:, [(length(field_MS.phi)-N_rot):length(field_MS.phi), 1:(length(field_MS.phi)-N_rot-1)]);
+        if N_rot>=0 
+            user_ant_gain_v = user_ant_gain_v_temp(:, [(length(field_MS.phi)-N_rot):length(field_MS.phi), 1:(length(field_MS.phi)-N_rot-1)]);
+            user_ant_gain_h = user_ant_gain_h_temp(:, [(length(field_MS.phi)-N_rot):length(field_MS.phi), 1:(length(field_MS.phi)-N_rot-1)]);
         else
-            user_ant_gain_v = user_ant_gain_v(:, [abs(N_rot):length(field_MS.phi), 1:abs(N_rot)-1]);
-            user_ant_gain_h = user_ant_gain_h(:, [abs(N_rot):length(field_MS.phi), 1:abs(N_rot)-1]);
+            user_ant_gain_v = user_ant_gain_v_temp(:, [abs(N_rot):length(field_MS.phi), 1:abs(N_rot)-1]);
+            user_ant_gain_h = user_ant_gain_h_temp(:, [abs(N_rot):length(field_MS.phi), 1:abs(N_rot)-1]);
         end
         
         for idx_ss = 1:numSS

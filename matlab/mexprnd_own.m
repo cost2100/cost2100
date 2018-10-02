@@ -1,17 +1,21 @@
-function MS_VR = get_MS_VR(VRtable, paraEx)
-%GET_MS_VR Function to generate the VR
+function r = mexprnd_own(Leff, L, m, n)
+%MEXP_OWN Function to compute a modified exponential random variable
+%with pdf % (L+x)/(L+Leff)*1/Leff*exp(-x/Leff)
 %
-%Default call: 
-%MS_VR = get_MS_VR(VRtable, paraEx)
+%Default call:
+%r = mexprnd_own(Leff, L, m, m)
+%
 %------
 %Input:
 %------
-%paraEx: External parameters
-%VRtable: VR assignment table
+%Leff: BS-VR length
+%L: Array length
+%m: Number of output rows 
+%n: Number of output columns
 %------
 %Output:
 %------
-%VR: the VR distribution (numVR, [x y])
+%r: The random variables
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %This file is a part of the COST2100 channel model.
@@ -34,12 +38,24 @@ function MS_VR = get_MS_VR(VRtable, paraEx)
 %with this program. If not, see <http://www.gnu.org/licenses/>.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nVR = length(VRtable(1,:,1)); %VR number
-net_radii = paraEx.net_radii; %Radius of cell
+% Sanity check.
+if (nargin < 3)
+    m = 1;
+end
 
-angleVR = 2*pi*rand(nVR, 1);
-distVR  = sqrt(rand(nVR, 1))*net_radii;
-x       = distVR.*cos(angleVR);
-y       = distVR.*sin(angleVR);
-MS_VR(:, 1) = x;
-MS_VR(:, 2) = y;
+if (nargin < 4)
+    n = 1;
+end
+
+if ((L<0) || (Leff<0))
+    % Illegal parameter values
+    r = zeros(m,n);
+elseif (Leff==Inf)
+    % Set all to infinite.
+    r = inf*ones(m,n);
+else
+    % Generate random variables with the desired PDF by the inverse CDF
+    % method (see Bishop's book "Pattern Recognition and Machine Learning."
+    t1 = rand(m,n);
+    r = -Leff*lambertw(-1,(t1-1)*exp(-(L+Leff)/Leff)*(L+Leff)/Leff) - L - Leff;
+end

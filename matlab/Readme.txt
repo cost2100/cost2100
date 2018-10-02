@@ -1,4 +1,11 @@
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+New version by by Sara Gunnarsson and Jose Flordelis, Lund University, 
+Lund, Sweden. Massive MIMO scenario Indoor_CloselySpacedUser_2_6GHz 
+has been added, togother with some modifications to the VLA and MPC gain 
+function extensions for Massive MIMO. Additionally, bug fixes and speed 
+optimizations are also included.
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 The updated version 3.0 is implemented by Sara Gunnarsson and Jose 
 Flordelis, Lund University, Lund, Sweden. Massive MIMO extensions are now 
 fully backwards compatible, and the four scenarios (IndoorHall_5GHz, 
@@ -78,7 +85,7 @@ If you use the SemiUrban_CloselySpacedUser_2_6GHz scenario, further information 
 1. Flordelis, J., Gao, X., Dahman, G., Rusek, F., Edfors, O., & Tufvesson, F. (2015). 
 Spatial Separation of CloselySpaced Users in Measured Massive Multi-User MIMO Channels. 
 In 2015 IEEE International Conference on Communications (ICC) (pp. 1441-1446). 
-IEEE--Institute of Electrical and Electronics Engineers Inc.
+IEEE--Institute of Electrical and Electronics Engineers Inc..
 2. Gao, X., Flordelis, J., Dahman, G., Tufvesson, F., & Edfors, O. (2015). 
 Massive MIMO Channel Modeling - Extension of the COST 2100 Model. Paper presented at 
 Joint NEWCOM/COST Workshop on Wireless Communications (JNCW), Barcelona, Spain.
@@ -163,6 +170,7 @@ get_para
 get_VRLOS
 get_VRtable
 lognrnd_own
+mexprnd_own
 poissrnd_own
 rotate_matrix
 setFontsize

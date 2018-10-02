@@ -72,9 +72,9 @@ tau_0=d_BS_MS/paraEx.c0; % Delay of the LOS
 amp_LOS = sqrt(power_los);
 
 % Polarization matrix
-amp_vv = 1;
+amp_vv = 1/sqrt(2);
 amp_vh = 0;
-amp_hh = 1;
+amp_hh = 1/sqrt(2);
 amp_hv = 0;
 
 % The unfiltered LOS impulse response, angle in radians

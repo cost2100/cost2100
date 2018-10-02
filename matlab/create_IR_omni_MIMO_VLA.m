@@ -48,25 +48,19 @@ end
 Nr = 1; % Assuming single-antenna terminals
 first_snapshot = 1;
 last_snapshot = size(link.channel,2); 
-nBS_pos = size(link.channel,1); % Number of positions along the large array
+nBS_pos = size(link.channel,1); % number of positions along large array
 H = zeros(last_snapshot,length(Nfreq),Nr,nBS_pos);
-
 for jj = first_snapshot:last_snapshot      
     for kk = 1:nBS_pos
+        % h = [phi_mpc_BS theta_mpc_BS phi_mpc_MS theta_mpc_MS tau_mpc amp_h]
+        % unfiletered impulse response, angle in radii
         channel1 = link.channel{kk,jj}.h;
         channel2 = link.channel{kk,jj}.h_los;
         channel = [channel1; channel2];
         MPC_delay = channel(:,5); % Delay
         MPC_amp = channel(:,6); % Amplitude
-        MPC_AOA = channel(:,3); % AOA in azimuth at MS
-        MPC_AOD = channel(:,1); % AOD in azimuth at BS
-        H11 = zeros(1,length(Nfreq));
-        
-        for I = 1:length(Nfreq)
-            H11(I) = sum(MPC_amp.*exp(-1j*2*pi*Nfreq(I)*MPC_delay));
-        end  
-        
-        H(jj,:,1,kk) = H11; 
+        H11 = MPC_amp.' * exp(-1i*2*pi*MPC_delay*Nfreq);
+        H(jj,:,1,kk) = H11;
     end
 end
 

@@ -8,7 +8,7 @@ function [paraEx, paraSt, link, env] = cost2100(network, scenario, freq, snapRat
 %------
 %Input:
 %------
-%network: 'IndoorHall_5GHz','SemiUrban_300MHz','SemiUrban_CloselySpacedUser_2_6GHz', or 'SemiUrban_VLA_2_6GHz'
+%network: 'IndoorHall_5GHz','SemiUrban_300MHz','SemiUrban_CloselySpacedUser_2_6GHz', 'Indoor_CloselySpacedUser_2_6GHz', or 'SemiUrban_VLA_2_6GHz'
 %scenario: 'LOS' or 'NLOS'   
 %freq: Frequency band [Hz]
 %snapRate: Number of channel snapshot per s
@@ -96,6 +96,8 @@ numMS = length(MSPos(:,1)); % Number of MSs
 [paraEx, paraSt] = get_para(network, scenario, freq, snapRate, snapNum, BSPosCenter, BSPosSpacing, BSPosNum, MSPos, MSVelo);
 VRtable = get_VRtable(paraEx,paraSt); % Get VR table
 MS_VR = get_MS_VR(VRtable, paraEx); % Get MS-VR locations
+PRUNE_VR = 0; % Activate for speed if there are lots of useless MS-VRs.
+if PRUNE_VR; [VRtable, MS_VR] = prune_MS_VR(MS_VR, VRtable, paraEx, paraSt); end
 cluster = get_cluster(MS_VR, VRtable, paraEx, paraSt);
 mpc = get_mpc(cluster, paraSt); % Get MPCs - scattering points in each cluster
 dmc = get_dmc(cluster, paraSt); % Get DMCs - diffuse multipath components
@@ -163,3 +165,35 @@ env.BS_VR_slope = BS_VR_slope;
 env.cluster = cluster; % Far clusters
 env.mpc = mpc;
 env.dmc = dmc;
+
+function [VRtable, MS_VR] = prune_MS_VR(MS_VR, VRtable, paraEx, paraSt)
+prune_list = ones(size(MS_VR,1),1);
+for MS_VR_idx = 1:size(MS_VR,1)
+    for MS_idx = 1:paraEx.num_MS
+        velo_MS = paraEx.velo_MS(MS_idx,1:2);
+        pos_MS = paraEx.pos_MS(MS_idx,1:2);
+        if (norm(velo_MS)==0)
+            t_star = 0;
+        else
+            t_star = - 1/norm(velo_MS)^2 * velo_MS*(pos_MS - MS_VR(MS_VR_idx,1:2)).';
+        end
+        if (t_star<0)
+            t_min = 0;
+        elseif (t_star>(paraEx.snap_num-1)/paraEx.snap_rate)
+            t_min = (paraEx.snap_num-1)/paraEx.snap_rate;
+        else
+            t_min = t_star;
+        end
+        d_min = norm(pos_MS - MS_VR(MS_VR_idx,1:2) + velo_MS*t_min);
+        if (d_min<paraSt.r_c)
+            prune_list(MS_VR_idx) = 0;
+        end
+    end
+end
+VRtable(:,prune_list==1,:) = [];
+MS_VR(prune_list==1,:) = [];
+% MS-VR indices should be contiguous.
+MS_VR_indices = VRtable(:,:,2);
+[C,~,IC] = unique(MS_VR_indices(:));
+MS_VR_indices_min = 1:length(C);
+VRtable(:,:,2) = MS_VR_indices_min(IC);

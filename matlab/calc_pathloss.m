@@ -79,7 +79,7 @@ switch paraEx.network
     case {'microcell','SemiUrban_VLA_2_6GHz','SemiUrban_CloselySpacedUser_2_6GHz'} % COST259(GSN)        
         pl = 26*log10(dist)+20*log10(paraEx.center_freq)-147.56; % Free space pathloss
         pathloss = 10^(-pl/20);
-    case {'picocell','IndoorHall_5GHz','SemiUrban_300MHz'} % COST2100 TD02-055
+    case {'picocell','IndoorHall_5GHz','Indoor_CloselySpacedUser_2_6GHz','SemiUrban_300MHz'} %COST2100 TD02-055
         pl_0 = 20*log10(dist)+20*log10(paraEx.center_freq)-147.56; % Free space pathloss
         pl_d = paraEx.n_floor*30; % Average number of floors * 30 dB extra pathloss
         pathloss = 10^(-(pl_0+pl_d)/20);

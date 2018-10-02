@@ -25,3 +25,8 @@ is half a wavelentgh. Renamed the scenarios to reflect the measured environments
 Merged MAMMOET Massive MIMO extension with previous code base. 
 Code restructured for back-compatibility. 
 Some bugs have been fixed.
+
+2018.10.01 Jose Flordelis, Sara Gunnarsson
+Some modifications to MAMMOET Massive MIMO extensions (get_BS_VR_para.m).
+Some bugs have been fixed (create_IR_Cyl_EADF.m, get_channel_los.m, get_mpc.m, get_MS_VR.m, update_chan.m).
+Some efficiency improvment have been implemented (create_IR_omni_MIMO_VLA.m, get_channel.m, update_chan.m).
