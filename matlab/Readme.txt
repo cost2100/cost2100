@@ -1,9 +1,9 @@
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
-New version by by Sara Gunnarsson and Jose Flordelis, Lund University, 
-Lund, Sweden. Massive MIMO scenario Indoor_CloselySpacedUser_2_6GHz 
-has been added, togother with some modifications to the VLA and MPC gain 
-function extensions for Massive MIMO. Additionally, bug fixes and speed 
-optimizations are also included.
+The updated version 3.1 is implemented by Sara Gunnarsson and Jose 
+Flordelis, Lund University, Lund, Sweden. Massive MIMO scenario 
+Indoor_CloselySpacedUser_2_6GHz has been added, together with some 
+modifications to the VLA and MPC gain function extensions for Massive MIMO. 
+Additionally, bug fixes and speed optimizations are also included.
 
 \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 The updated version 3.0 is implemented by Sara Gunnarsson and Jose 
